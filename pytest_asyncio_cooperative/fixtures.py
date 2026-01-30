@@ -16,14 +16,12 @@ class Ignore(Exception):
 
 
 def function_args(func):
+    """Возвращает имена позиционных аргументов функции."""
     return func.__code__.co_varnames[: func.__code__.co_argcount]
 
 
 def _get_fixture(item, arg_name, fixture=None):
-    """
-    Sometimes fixture names clash with plugin fixtures.
-    We prioritise fixtures that are defined inside the user's module
-    """
+    """Выбирает фикстуру, отдавая приоритет пользовательскому модулю."""
     if arg_name == "request":
         # Support parameterized fixture
         if fixture:
@@ -46,6 +44,7 @@ def _get_fixture(item, arg_name, fixture=None):
 
 
 async def fill_fixtures(item: Item):
+    """Заполняет значения фикстур для теста и собирает teardown-ы."""
     fixture_values = []
     teardowns = []
 
@@ -96,6 +95,7 @@ async def fill_fixtures(item: Item):
 async def _fill_fixture_fixtures(
     _fixtureinfo: FuncFixtureInfo, fixture: FixtureDef, item: Item
 ):
+    """Рекурсивно заполняет зависимости фикстуры и собирает teardown-ы."""
     values = []
     all_teardowns = []
     for arg_name in function_args(fixture.func):
@@ -112,6 +112,7 @@ async def _fill_fixture_fixtures(
 
 class CachedFunctionBase(object):
     def __init__(self, wrapped_func):
+        """Инициализирует базовую обертку для кеширования вызовов."""
         self.lock = asyncio.Lock()
         self.wrapped_func = wrapped_func
 
@@ -122,15 +123,18 @@ class CachedFunctionBase(object):
 
     @property
     def __code__(self):
+        """Проксирует доступ к атрибуту __code__ обернутой функции."""
         return self.wrapped_func.__code__
 
     @property
     def __name__(self):
+        """Проксирует доступ к имени обернутой функции."""
         return self.wrapped_func.__name__
 
 
 class CachedFunction(CachedFunctionBase):
     async def __call__(self, *args, **kwargs):
+        """Вызывает функцию один раз и кеширует результат или исключение."""
         async with self.lock:
             if hasattr(self, "value"):
                 return self.value
@@ -149,13 +153,16 @@ class CachedFunction(CachedFunctionBase):
 
 class GenCounter:
     def __init__(self, parent):
+        """Создает счетчик вызовов для генератора."""
         self.num_calls = 0
         self.parent = parent
 
     def __iter__(self):
+        """Возвращает себя для итерации."""
         return self
 
     def __next__(self):
+        """Отслеживает количество вызовов и делегирует next родителю."""
         self.num_calls += 1
         if self.num_calls == 2:
             self.parent.completed(self)
@@ -163,17 +170,19 @@ class GenCounter:
 
 
 class CachedGen(CachedFunctionBase):
-    """Save the result of the 1st yield.
-    Yield 2nd yield when all callers have yielded."""
+    """Сохраняет результат первого yield и повторяет его для всех вызовов."""
 
     def __init__(self, wrapped_func):
+        """Инициализирует кеширование для генераторной функции."""
         super().__init__(wrapped_func)
         self.instances = set()
 
     def completed(self, instance):
+        """Отмечает завершение использования экземпляра генератора."""
         self.instances.remove(instance)
 
     def __call__(self, *args, **kwargs):
+        """Создает счетчик, сохраняя аргументы вызова."""
         self.args = args
         self.kwargs = kwargs
         instance = GenCounter(self)
@@ -181,6 +190,7 @@ class CachedGen(CachedFunctionBase):
         return instance
 
     def __next__(self):
+        """Возвращает кешированное значение первого yield генератора."""
         if len(self.instances) == 0:
             return self.gen.__next__()
         if hasattr(self, "value"):
@@ -200,13 +210,16 @@ class CachedGen(CachedFunctionBase):
 
 class AsyncGenCounter:
     def __init__(self, parent):
+        """Создает счетчик вызовов для асинхронного генератора."""
         self.num_calls = 0
         self.parent = parent
 
     def __aiter__(self):
+        """Возвращает себя для асинхронной итерации."""
         return self
 
     async def __anext__(self):
+        """Отслеживает вызовы и делегирует __anext__ родителю."""
         self.num_calls += 1
         if self.num_calls == 2:
             self.parent.completed(self)
@@ -214,17 +227,19 @@ class AsyncGenCounter:
 
 
 class CachedAsyncGen(CachedFunctionBase):
-    """Save the result of the 1st yield.
-    Yield 2nd yield when all callers have yielded."""
+    """Сохраняет результат первого yield и повторяет его для всех вызовов."""
 
     def __init__(self, wrapped_func):
+        """Инициализирует кеширование для асинхронного генератора."""
         super().__init__(wrapped_func)
         self.instances = set()
 
     def completed(self, instance):
+        """Отмечает завершение использования экземпляра генератора."""
         self.instances.remove(instance)
 
     def __call__(self, *args, **kwargs):
+        """Создает счетчик и сохраняет аргументы вызова."""
         self.args = args
         self.kwargs = kwargs
         instance = AsyncGenCounter(self)
@@ -232,6 +247,7 @@ class CachedAsyncGen(CachedFunctionBase):
         return instance
 
     async def __anext__(self):
+        """Возвращает кешированное значение первого yield генератора."""
         if len(self.instances) == 0:
             return await self.gen.__anext__()
         async with self.lock:
@@ -251,15 +267,15 @@ class CachedAsyncGen(CachedFunctionBase):
 
 
 class CachedAsyncGenByArguments(CachedAsyncGen):
-    """Save the result of the 1st yield.
-    Yield 2nd yield when all callers have yielded.
-    We cache based off arguments."""
+    """Кеширует async-генераторы по набору аргументов вызова."""
 
     def __init__(self, wrapped_func):
+        """Инициализирует кеш по аргументам для async-генераторов."""
         super().__init__(wrapped_func)
         self.callers_by_args = {}
 
     def __call__(self, *args, **kwargs):
+        """Возвращает генератор, закешированный для набора аргументов."""
         # TODO: Handle cases where args are the same, but kwargs differ
         if args in self.callers_by_args:
             gen = self.callers_by_args[args]
@@ -272,6 +288,7 @@ class CachedAsyncGenByArguments(CachedAsyncGen):
 async def _make_asyncgen_fixture(
     _fixtureinfo: FuncFixtureInfo, fixture: FixtureDef, item: Item
 ):
+    """Создает async-генераторную фикстуру и список teardown-ов."""
     fixture_values, teardowns = await _fill_fixture_fixtures(
         _fixtureinfo, fixture, item
     )
@@ -302,6 +319,7 @@ async def _make_asyncgen_fixture(
 async def _make_coroutine_fixture(
     _fixtureinfo: FuncFixtureInfo, fixture: FixtureDef, item: Item
 ):
+    """Создает корутинную фикстуру и список teardown-ов."""
     fixture_values, teardowns = await _fill_fixture_fixtures(
         _fixtureinfo, fixture, item
     )
@@ -332,6 +350,7 @@ async def _make_coroutine_fixture(
 async def _make_regular_generator_fixture(
     _fixtureinfo: FuncFixtureInfo, fixture: FixtureDef, item: Item
 ):
+    """Создает генераторную фикстуру и список teardown-ов."""
     fixture_values, teardowns = await _fill_fixture_fixtures(
         _fixtureinfo, fixture, item
     )
@@ -359,6 +378,7 @@ async def _make_regular_generator_fixture(
 async def _make_regular_fixture(
     _fixtureinfo: FuncFixtureInfo, fixture: FixtureDef, item: Item
 ):
+    """Создает синхронную фикстуру и список teardown-ов."""
     # FIXME: we should use more of pytest's fixture system
     fixture_values, teardowns = await _fill_fixture_fixtures(
         _fixtureinfo, fixture, item
@@ -392,6 +412,7 @@ async def fill_fixture_fixtures(
     fixture: Union[FixtureDef, FixtureRequest],
     item: Item,
 ):
+    """Определяет тип фикстуры и заполняет ее значения."""
     if isinstance(fixture, FixtureRequest):
         return fixture, []
 
