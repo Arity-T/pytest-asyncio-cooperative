@@ -1,20 +1,59 @@
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/psf/black
 
+.. note::
+
+    Дерево проекта:
+
+    .. code-block::
+
+        .
+        ├── LICENSE
+        ├── README.rst
+        ├── requirements.txt
+        ├── pyproject.toml
+        ├── example
+        │   ├── fixtures.py
+        │   ├── mixed.py
+        │   ├── module_fixture.py
+        │   └── simple.py
+        ├── pytest_asyncio_cooperative
+        │   ├── __init__.py
+        │   ├── assertion.py
+        │   ├── fixtures.py
+        │   ├── integration
+        │   │   └── hypothesis.py
+        │   ├── plugin.py
+        │   └── tests
+        │       └── test_async.py
+        └── tests
+            ├── conftest.py
+            ├── test_autouse.py
+            ├── test_bugs.py
+            ├── test_class_based.py
+            ├── test_fail.py
+            ├── test_fixture.py
+            ├── test_fixture_ducktyping.py
+            ├── test_fixture_object_passing.py
+            ├── test_fixture_ordering.py
+            ├── test_junitxml.py
+            ├── test_known_issues.py
+            ├── test_max_asyncio_tasks.py
+            └── test_parameterize.py
+
 Use asyncio (cooperative multitasking) to run your I/O bound test suite efficiently and quickly.
 
 .. code-block:: python
    :class: ignore
-   
+
    import asyncio
 
    import pytest
-   
+
    @pytest.mark.asyncio_cooperative
    async def test_a():
        await asyncio.sleep(2)
-   
-   
+
    @pytest.mark.asyncio_cooperative
    async def test_b():
        await asyncio.sleep(2)
@@ -23,7 +62,7 @@ Use asyncio (cooperative multitasking) to run your I/O bound test suite efficien
 .. code-block:: bash
    :class: ignore
 
-   ========== 2 passed in 2.05 seconds ==========
+   ========== 2 passed in 2.05 seconds ========== 
 
 
 Quickstart
