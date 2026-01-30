@@ -45,7 +45,15 @@ def _get_fixture(item, arg_name, fixture=None):
     return fixtures[-1]
 
 
-async def fill_fixtures(item: Item):
+    """
+    Prepare and return fixture values for a test item.
+    
+    Args:
+        item (Item): The test item for which the fixtures are being prepared.
+    
+    Returns:
+        List: A list of prepared fixture values.
+    """
     fixture_values = []
     teardowns = []
 
