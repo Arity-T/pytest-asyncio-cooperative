@@ -30,6 +30,15 @@ async def hypothesis_test_wrapper(item):
             # Loop closing can be handled elsewhere or removed depending on use case
             pass  # Removed loop.close() to retain cached loop during multiple runs
 
+    item.function.hypothesis.inner_test = async_to_sync
+    wrapped_func_with_fixtures = functools.partial(item.function, *fixture_values)
+    await default_loop.run_in_executor(None, wrapped_func_with_fixtures)
+
+    # Do teardowns
+    item.start_teardown = time.time()
+    for teardown in teardowns:
+        try:
+            await teardown.__anext__()
         except StopAsyncIteration:
             pass
     item.stop_teardown = time.time()
