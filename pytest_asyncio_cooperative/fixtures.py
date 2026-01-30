@@ -46,6 +46,15 @@ def _get_fixture(item, arg_name, fixture=None):
 
 
 async def fill_fixtures(item: Item):
+    """
+    Заполняет фикстуры для тестового элемента.
+    
+    Аргументы:
+        item (Item): Тестовый элемент, для которого заполняются фикстуры.
+    
+    Возвращаемое значение:
+        None
+    """
     fixture_values = []
     teardowns = []
 
