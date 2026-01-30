@@ -40,3 +40,13 @@ jobs:
     - name: Test with pytest
       run: |
         pytest tests/
+    - name: Debug Information
+      run: |
+        echo "Checking Python version..."
+        python --version
+        echo "Checking installed packages..."
+        pip list
+        echo "Running tests..."
+        pytest --maxfail=1 --disable-warnings -q tests/
+        echo "Test completion check..."
+        if [[ $? -ne 0 ]]; then echo "Tests failed!"; else echo "Tests passed!"; fi
