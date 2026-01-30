@@ -23,9 +23,8 @@ def test_retry(testdir):
         async def test_a():
             global count
             count += 1
-            if count < 2:
-                print(count, str(uuid.uuid4()))
-                raise Exception("should not be run!")
+@pytest.mark.flaky(2)
+        @pytest.mark.asyncio_cooperative
     """
     )
 
