@@ -1,9 +1,11 @@
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/psf/black
 
-Use asyncio (cooperative multitasking) to run your I/O bound test suite efficiently and quickly.
+# Перевод Readme на русский язык
 
-.. code-block:: python
+Используйте asyncio (сотрудничающее многозадачное выполнение), чтобы эффективно и быстро запустить свой тестовый набор, зависящий от ввода-вывода.
+
+.. код-блок:: python
    :class: ignore
    
    import asyncio
@@ -20,29 +22,30 @@ Use asyncio (cooperative multitasking) to run your I/O bound test suite efficien
        await asyncio.sleep(2)
 
 
-.. code-block:: bash
+.. код-блок:: bash
    :class: ignore
 
-   ========== 2 passed in 2.05 seconds ==========
+   ========== 2 пройдены за 2.05 секунд ========== 
 
 
-Quickstart
+Быстрый старт
 ----------
-.. code-block:: bash
+.. код-блок:: bash
    :class: ignore
 
    pip install pytest-asyncio-cooperative
 
 
-Compatibility
+Совместимость
 -------------
-pytest-asyncio is NOT compatible with this plugin. Please uninstall pytest-asyncio or pass this flag to pytest `-p no:asyncio`
+pytest-asyncio несовместим с этим плагином. Пожалуйста, удалите pytest-asyncio или передайте этот флаг pytest `-p no:asyncio`
 
-Fixtures
+
+Фикстуры
 --------
-It's recommended that async tests use async fixtures.
+Рекомендуется, чтобы асинхронные тесты использовали асинхронные фикстуры.
 
-.. code-block:: bash
+.. код-блок:: bash
    :class: ignore
 
    import asyncio
@@ -62,39 +65,40 @@ It's recommended that async tests use async fixtures.
        assert my_fixture == "XXX"
 
 
-Goals
+Цели
 -----
 
-- Reduce the total run time of I/O bound test suites via cooperative multitasking
+- Уменьшить общее время выполнения тестового набора, зависящего от ввода-вывода, за счет сотрудничества в многозадачности
 
-- Reduce system resource usage via cooperative multitasking
+- Снизить использование системных ресурсов за счет сотрудничества в многозадачности
 
 
-Pros
+Преимущества
 ----
 
-- An I/O bound test suite will run faster (ie. individual tests will take just as long. The total runtime of the entire test suite will be faster)
+- Тестовый набор, зависящий от ввода-вывода, будет работать быстрее (то есть, отдельные тесты займут столько же времени. Общее время выполнения всего тестового набора будет быстрее)
 
-- An I/O bound test suite will use less system resources (ie. only a single thread is used)
+- Тестовый набор, зависящий от ввода-вывода, будет использовать меньше системных ресурсов (то есть используется только один поток)
 
-Cons
+
+Недостатки
 ----
 
-- Order of tests is not guaranteed (ie. some blocking operations might taken longer and affect the order of test results)
+- Порядок тестов не гарантирован (то есть, некоторые блокирующие операции могут занять больше времени и повлиять на порядок результатов тестов)
 
-- Tests MUST be isolated from each other (ie. NO shared resources, NO `mock.patch`). However, note that locks can be used to ensure isolation.
+- Тесты ДОЛЖНЫ быть изолированы друг от друга (то есть НЕТ общих ресурсов, НЕТ `mock.patch`). Однако стоит отметить, что блокировки могут быть использованы для обеспечения изоляции.
 
-- There is NO parallelism, CPU bound tests will NOT get a performance benefit
+- Нет параллелизма, тесты, зависящие от ЦП, НЕ получат преимущества в производительности
 
 
-Mocks & Shared Resources
+Моки и общие ресурсы
 ------------------------
 
-When using mocks and shared resources cooperative multitasking means tests could have race conditions.
+При использовании моков и общих ресурсов, сотрудничающее многозадачное выполнение означает, что тесты могут иметь состояния гонки.
 
-In this case you can use locks:
+В этом случае вы можете использовать блокировки:
 
-.. code-block:: bash
+.. код-блок:: bash
    :class: ignore
 
    import asyncio
@@ -110,6 +114,31 @@ In this case you can use locks:
 
    @pytest.mark.asyncio_cooperative
    async def test_a(lock, mocker):
+       await asyncio.sleep(2)
+       mocker.patch("service.http.on_handler")
+       access_shared_resource()
+       assert my_fixture == "XXX"
+
+   @pytest.mark.asyncio_cooperative
+   async def test_b(lock, mocker):
+       await asyncio.sleep(2)
+       mocker.patch("service.http.on_handler")
+       access_shared_resource()
+       assert my_fixture == "XXX"
+
+В приведенном выше примере важно поместить фикстуру `lock` на крайний левый край, чтобы обеспечить взаимное исключение.
+
+
+Тайм-ауты
+--------
+
+Тесты автоматически отменяются после тайм-аута в 600 секунд. Вы можете изменить это с помощью параметра `--asyncio-task-timeout` или добавив элемент `asyncio_task_timeout` в ваш файл `pytest.ini`.
+
+Максимальное количество асинхронных задач
+--------------------------
+
+Иногда вы хотите ограничить количество задач, работающих одновременно. Вы можете установить максимум с помощью параметра `--max-asyncio-tasks`, добавив элемент `max_asyncio_tasks` в ваш файл `pytest.ini`.
+
        await asyncio.sleep(2)
        mocker.patch("service.http.on_handler")
        access_shared_resource()
