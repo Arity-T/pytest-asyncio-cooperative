@@ -92,16 +92,20 @@ Mocks & Shared Resources
 
 When using mocks and shared resources cooperative multitasking means tests could have race conditions.
 
-In this case you can use locks:
+In this case you can use locks to ensure that tests are run sequentially when accessing shared resources:
 
-.. code-block:: bash
+.. code-block:: python
    :class: ignore
 
    import asyncio
    import pytest
    from pytest_asyncio_cooperative import Lock
 
+   # Shared lock instance across all tests
    my_lock = Lock()
+   
+   # Shared resource that needs protection
+   shared_state = []
 
    @pytest.fixture(scope="function")
    async def lock():
@@ -110,19 +114,21 @@ In this case you can use locks:
 
    @pytest.mark.asyncio_cooperative
    async def test_a(lock, mocker):
+       # The lock fixture ensures this test runs exclusively
        await asyncio.sleep(2)
        mocker.patch("service.http.on_handler")
-       access_shared_resource()
-       assert my_fixture == "XXX"
+       shared_state.append("test_a")
+       assert shared_state == ["test_a"]
 
    @pytest.mark.asyncio_cooperative
    async def test_b(lock, mocker):
+       # The lock fixture ensures this test runs exclusively
        await asyncio.sleep(2)
        mocker.patch("service.http.on_handler")
-       access_shared_resource()
-       assert my_fixture == "XXX"
+       shared_state.append("test_b")
+       assert shared_state == ["test_b"]
 
-In the above example it's important to put the `lock` fixture on the far left-hand side to ensure mutual exclusivity.
+In the above example it's important to put the ``lock`` fixture on the far left-hand side (first parameter) to ensure mutual exclusivity. The lock ensures that only one test using the fixture can run at a time, preventing race conditions when accessing shared resources or mocks.
 
 Timeouts
 --------
