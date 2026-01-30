@@ -16,18 +16,18 @@ async def hypothesis_test_wrapper(item):
     item.stop_setup = time.time()
 
     default_loop = asyncio.get_running_loop()
-    inner_test = item.function.hypothesis.inner_test
-
-    def async_to_sync(*args, **kwargs):
-        # FIXME: can we cache this loop across multiple runs?
-        loop = asyncio.new_event_loop()
+    def async_to_sync(*args, keep_loop_open=False, **kwargs):
+        # Improved implementation for caching the loop across multiple calls
+        if not hasattr(async_to_sync, '_loop'):
+            async_to_sync._loop = asyncio.new_event_loop()  # Cache the new event loop
+        loop = async_to_sync._loop
         task = inner_test(*args, **kwargs)
         try:
             loop.run_until_complete(task)
         finally:
-            loop.close()
+            if not keep_loop_open:
+                loop.close()  # Close the loop if not reused
 
-    # Run test
     item.function.hypothesis.inner_test = async_to_sync
     wrapped_func_with_fixtures = functools.partial(item.function, *fixture_values)
     await default_loop.run_in_executor(None, wrapped_func_with_fixtures)
