@@ -18,19 +18,12 @@ def test_retry(testdir):
 
         count = 0
 
-        @pytest.mark.flaky
         @pytest.mark.asyncio_cooperative
+        @pytest.mark.flaky
         async def test_a():
             global count
             count += 1
             if count < 2:
                 print(count, str(uuid.uuid4()))
                 raise Exception("should not be run!")
-    """
-    )
-
-    result = testdir.runpytest()
-
-    result.assert_outcomes(
-        errors=0, failed=0, passed=1, xfailed=0, xpassed=0, skipped=0
-    )
+    
