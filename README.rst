@@ -1,7 +1,7 @@
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/psf/black
 
-Use asyncio (cooperative multitasking) to run your I/O bound test suite efficiently and quickly.
+Используйте asyncio (кооперативная многозадачность), чтобы эффективно и быстро запускать наборы I/O-зависимых тестов.
 
 .. code-block:: python
    :class: ignore
@@ -26,21 +26,21 @@ Use asyncio (cooperative multitasking) to run your I/O bound test suite efficien
    ========== 2 passed in 2.05 seconds ==========
 
 
-Quickstart
-----------
+Быстрый старт
+------------
 .. code-block:: bash
    :class: ignore
 
    pip install pytest-asyncio-cooperative
 
 
-Compatibility
+Совместимость
 -------------
-pytest-asyncio is NOT compatible with this plugin. Please uninstall pytest-asyncio or pass this flag to pytest `-p no:asyncio`
+pytest-asyncio НЕ совместим с этим плагином. Пожалуйста, удалите pytest-asyncio или передайте в pytest флаг `-p no:asyncio`.
 
-Fixtures
+Фикстуры
 --------
-It's recommended that async tests use async fixtures.
+Рекомендуется, чтобы асинхронные тесты использовали асинхронные фикстуры.
 
 .. code-block:: bash
    :class: ignore
@@ -62,37 +62,37 @@ It's recommended that async tests use async fixtures.
        assert my_fixture == "XXX"
 
 
-Goals
+Цели
+----
+
+- Сократить общее время выполнения I/O-зависимых тестовых наборов за счет кооперативной многозадачности
+
+- Снизить использование системных ресурсов за счет кооперативной многозадачности
+
+
+Плюсы
 -----
 
-- Reduce the total run time of I/O bound test suites via cooperative multitasking
+- I/O-зависимый набор тестов будет выполняться быстрее (т.е. отдельные тесты будут выполняться столько же. Общее время выполнения всего набора тестов будет меньше)
 
-- Reduce system resource usage via cooperative multitasking
+- I/O-зависимый набор тестов будет использовать меньше системных ресурсов (т.е. используется только один поток)
 
+Минусы
+------
 
-Pros
-----
+- Порядок тестов не гарантируется (т.е. некоторые блокирующие операции могут выполняться дольше и влиять на порядок результатов тестов)
 
-- An I/O bound test suite will run faster (ie. individual tests will take just as long. The total runtime of the entire test suite will be faster)
+- Тесты ДОЛЖНЫ быть изолированы друг от друга (т.е. НЕТ общих ресурсов, НЕТ `mock.patch`). Однако обратите внимание, что блокировки можно использовать для обеспечения изоляции.
 
-- An I/O bound test suite will use less system resources (ie. only a single thread is used)
-
-Cons
-----
-
-- Order of tests is not guaranteed (ie. some blocking operations might taken longer and affect the order of test results)
-
-- Tests MUST be isolated from each other (ie. NO shared resources, NO `mock.patch`). However, note that locks can be used to ensure isolation.
-
-- There is NO parallelism, CPU bound tests will NOT get a performance benefit
+- Параллелизма НЕТ, CPU-зависимые тесты НЕ получат преимущества в производительности
 
 
-Mocks & Shared Resources
-------------------------
+Моки и общие ресурсы
+--------------------
 
-When using mocks and shared resources cooperative multitasking means tests could have race conditions.
+При использовании моков и общих ресурсов кооперативная многозадачность означает, что тесты могут иметь гонки.
 
-In this case you can use locks:
+В этом случае можно использовать блокировки:
 
 .. code-block:: bash
    :class: ignore
@@ -122,14 +122,14 @@ In this case you can use locks:
        access_shared_resource()
        assert my_fixture == "XXX"
 
-In the above example it's important to put the `lock` fixture on the far left-hand side to ensure mutual exclusivity.
+В приведенном выше примере важно разместить фикстуру `lock` в самом левом положении, чтобы обеспечить взаимное исключение.
 
-Timeouts
+Таймауты
 --------
 
-Tests are automatically cancelled after a timeout of 600s. You can change this with the `--asyncio-task-timeout` option or by adding an `asyncio_task_timeout` entry to your `pytest.ini` file.
+Тесты автоматически отменяются после таймаута 600 секунд. Вы можете изменить это с помощью опции `--asyncio-task-timeout` или добавив параметр `asyncio_task_timeout` в файл `pytest.ini`.
 
-Maximum Asynchronous Tasks
+Максимум асинхронных задач
 --------------------------
 
-Sometimes you want to limit the number of tasks running concurrently. You can set a maximum with the `--max-asyncio-tasks` option by adding a `max_asyncio_tasks` entry to your `pytest.ini` file.
+Иногда нужно ограничить количество задач, выполняющихся одновременно. Вы можете установить максимум с помощью опции `--max-asyncio-tasks`, добавив параметр `max_asyncio_tasks` в файл `pytest.ini`.
